@@ -114,12 +114,10 @@ namespace MVCMusicStore.Controllers
                 await _signInManager.SignInAsync(user, false);
 
                 return RedirectToAction("Index", "Home");
-
             }
 
             foreach (var error in identityResult.Errors)
             {
-
                 _logger.LogError($"Failed to register: '{error.Description}'");
 
                 ModelState.AddModelError(string.Empty, error.Description);
