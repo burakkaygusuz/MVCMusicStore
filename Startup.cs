@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MVCMusicStore.Authentication;
 using MVCMusicStore.Models;
 
 namespace MVCMusicStore
@@ -24,13 +27,38 @@ namespace MVCMusicStore
             services.AddEntityFrameworkNpgsql().AddDbContext<MusicStoreContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("MusicStore")));
 
+            services.AddIdentity<ApplicationUser, IdentityRole>(config =>
+            {
+                config.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
+                //Prevents registered users from logging in until their email is confirmed.
+                config.SignIn.RequireConfirmedEmail = true;
+            }).AddEntityFrameworkStores<MusicStoreContext>().AddDefaultTokenProviders();
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+            {
+                options.LoginPath = "/Account/Login";
+                options.AccessDeniedPath = "/Account/AccessDenied";
+            });
+
+            services.Configure<IdentityOptions>(options =>
+            {
+                //Password Settings
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = true;
+
+                //User Settings
+                options.User.RequireUniqueEmail = true;
+            });
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
-
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
@@ -58,6 +86,7 @@ namespace MVCMusicStore
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
+            app.UseAuthentication();
 
             app.UseMvc(routes =>
             {
