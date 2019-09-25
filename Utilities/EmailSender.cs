@@ -1,41 +1,60 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.Extensions.Options;
-using MVCMusicStore.Authentication;
-using SendGrid;
-using SendGrid.Helpers.Mail;
+﻿using MailKit.Net.Smtp;
+using Microsoft.Extensions.Logging;
+using MimeKit;
+using MimeKit.Text;
 using System.Threading.Tasks;
 
 namespace MVCMusicStore.Utilities
 {
-    public class EmailSender : IEmailSender
+    public class EmailSender
     {
-        private AuthMessageSenderOptions Options { get; }
+        private readonly string senderName;
+        private readonly string senderEmailAddress;
+        private readonly string bodyContent;
+        private readonly string userName;
+        private readonly string password;
+        private const string Subject = "";
+        private const string SmtpServer = "smtp.gmail.com";
+        private const int SmtpPort = 587;
 
-        public EmailSender(IOptions<AuthMessageSenderOptions> OptionsAccessor) => Options = OptionsAccessor.Value;
+        private readonly ILogger<EmailSender> logger;
 
-        private static Task Execute(string apiKey, string subject, string message, string email)
+        public EmailSender(string senderName, string senderEmailAddress, string bodyContent, string userName, string password, ILogger<EmailSender> log)
         {
-            var client = new SendGridClient(apiKey);
-            var msg = new SendGridMessage
-            {
-                From = new EmailAddress("kaygusuzburak@gmail.com", "Burak Kaygusuz"),
-                Subject = subject,
-                PlainTextContent = message,
-                HtmlContent = message
-            };
-            msg.AddTo(new EmailAddress(email));
-
-            // Disable click tracking.
-            // See https://sendgrid.com/docs/User_Guide/Settings/tracking.html
-
-            msg.SetClickTracking(false, false);
-
-            return client.SendEmailAsync(msg);
+            this.senderName = senderName;
+            this.senderEmailAddress = senderEmailAddress;
+            this.bodyContent = bodyContent;
+            this.userName = userName;
+            this.password = password;
+            logger = log;
         }
 
-        public Task SendEmailAsync(string email, string subject, string htmlMessage)
+        private async Task SendEmailAsync(string reciever)
         {
-            return Execute(Options.SendGridKey, email, subject, htmlMessage);
+            try
+            {
+                var message = new MimeMessage
+                {
+                    Sender = new MailboxAddress(senderName, senderEmailAddress),
+                    Subject = Subject,
+                    Body = new TextPart(TextFormat.Html) { Text = bodyContent }
+                };
+
+                message.To.Add(new MailboxAddress(reciever));
+
+                using (var smtpClient = new SmtpClient())
+                {
+                    smtpClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                    await smtpClient.ConnectAsync(SmtpServer, SmtpPort, true);
+                    await smtpClient.AuthenticateAsync(userName, password);
+                    await smtpClient.SendAsync(message);
+                }
+            }
+            catch (SmtpCommandException ex)
+            {
+                logger.LogError($"Failed to send email: '{ex.Message}'");
+            }
         }
     }
 }

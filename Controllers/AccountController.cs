@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MVCMusicStore.Authentication;
+using MVCMusicStore.Utilities;
 using MVCMusicStore.ViewModels;
 using System;
 using System.Text.Encodings.Web;
@@ -17,9 +17,9 @@ namespace MVCMusicStore.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ILogger<AccountController> _logger;
-        private readonly IEmailSender _emailSender;
+        private readonly EmailSender _emailSender;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger, IEmailSender emailSender)
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger, EmailSender emailSender)
         {
             _userManager = userManager;
             _signInManager = signInManager;
