@@ -10,46 +10,43 @@ namespace MVCMusicStore.Utilities
     {
         private readonly string senderName;
         private readonly string senderEmailAddress;
-        private readonly string bodyContent;
         private readonly string userName;
         private readonly string password;
-        private const string Subject = "";
         private const string SmtpServer = "smtp.gmail.com";
         private const int SmtpPort = 587;
 
         private readonly ILogger<EmailSender> logger;
 
-        public EmailSender(string senderName, string senderEmailAddress, string bodyContent, string userName, string password, ILogger<EmailSender> log)
+        public EmailSender(string senderName, string senderEmailAddress, string userName, string password, ILogger<EmailSender> log)
         {
             this.senderName = senderName;
             this.senderEmailAddress = senderEmailAddress;
-            this.bodyContent = bodyContent;
             this.userName = userName;
             this.password = password;
             logger = log;
         }
 
-        private async Task SendEmailAsync(string reciever)
+        public async Task SendEmailAsync(string reciever,string subject, string htmlMessage)
         {
             try
             {
                 var message = new MimeMessage
                 {
                     Sender = new MailboxAddress(senderName, senderEmailAddress),
-                    Subject = Subject,
-                    Body = new TextPart(TextFormat.Html) { Text = bodyContent }
+                    Subject = subject,
+                    Body = new TextPart(TextFormat.Html) { Text = htmlMessage }
                 };
 
                 message.To.Add(new MailboxAddress(reciever));
 
-                using (var smtpClient = new SmtpClient())
+                using var smtpClient = new SmtpClient
                 {
-                    smtpClient.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                    ServerCertificateValidationCallback = (s, c, h, e) => true
+                };
 
-                    await smtpClient.ConnectAsync(SmtpServer, SmtpPort, true);
-                    await smtpClient.AuthenticateAsync(userName, password);
-                    await smtpClient.SendAsync(message);
-                }
+                await smtpClient.ConnectAsync(SmtpServer, SmtpPort, true);
+                await smtpClient.AuthenticateAsync(userName, password);
+                await smtpClient.SendAsync(message);
             }
             catch (SmtpCommandException ex)
             {
