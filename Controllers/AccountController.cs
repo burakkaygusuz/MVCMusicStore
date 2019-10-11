@@ -101,7 +101,7 @@ namespace MVCMusicStore.Controllers
 
             var identityResult = await _userManager.CreateAsync(user, registerViewModel.Password);
 
-            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var emailConfirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
             if (identityResult.Succeeded)
             {
@@ -127,15 +127,15 @@ namespace MVCMusicStore.Controllers
         }
 
         [AllowAnonymous]
-        public async Task<IActionResult> ConfirmEmail(string userId, string code)
+        public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
-            if (userId == null || code == null) return RedirectToAction("Index", "Home");
+            if (userId == null || token == null) return RedirectToAction("Index", "Home");
 
             var user = await _userManager.FindByIdAsync(userId);
 
             if (user == null) return NotFound($"Unable to load user with ID '{userId}'");
 
-            var confirmResult = await _userManager.ConfirmEmailAsync(user, code);
+            var confirmResult = await userManager.ConfirmEmailAsync(user, token);
 
             if (!confirmResult.Succeeded) throw new InvalidOperationException($"Error confirming email for user with ID '{userId}'");
 
@@ -145,11 +145,11 @@ namespace MVCMusicStore.Controllers
         // GET: /Account/ResetPassword
 
         [AllowAnonymous]
-        public IActionResult ResetPassword(string code = null)
+        public IActionResult ResetPassword(string token = null)
         {
-            var resetPasswordViewModel = new ResetPasswordViewModel { Code = code };
+            var resetPasswordViewModel = new ResetPasswordViewModel { Token = token };
 
-            return code == null ? View("Error") : View(resetPasswordViewModel);
+            return token == null ? View("Error") : View(resetPasswordViewModel);
         }
 
         // POST: /Account/ResetPassword
@@ -165,7 +165,7 @@ namespace MVCMusicStore.Controllers
 
             if (user == null) return RedirectToAction("ResetPasswordConfirmation", "Account");
 
-            var result = await _userManager.ResetPasswordAsync(user, resetPasswordViewModel.Code, resetPasswordViewModel.Password);
+            var result = await userManager.ResetPasswordAsync(user, resetPasswordViewModel.Token, resetPasswordViewModel.Password);
 
             return result.Succeeded ? (IActionResult)RedirectToAction("ResetPasswordConfirmation", "Account") : View();
         }
@@ -186,9 +186,9 @@ namespace MVCMusicStore.Controllers
                 return RedirectToAction("ForgotPasswordConfirmation", "Account");
             }
 
-            var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var passwordResetToken = await userManager.GeneratePasswordResetTokenAsync(user);
 
-            var callBackUrl = Url.Page("/Account/ResetPassword", null, new { code }, Request.Scheme);
+            var callBackUrl = Url.Page("/Account/ResetPassword", null, new { passwordResetToken }, Request.Scheme);
 
             await _emailSender.SendEmailAsync(forgotPasswordViewModel.Email, "Reset Password", $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
 
