@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using System.Threading.Tasks;
 
 namespace MVCMusicStore
 {
-    public static class Program
+    public class Program
     {
-        public static void Main(string[] args)
+        private async static Task Main(string[] args)
         {
-            CreateWebHostBuilder(args).Build().Run();
+            await CreateWebHostBuilder(args).Build().RunAsync();
         }
 
         private static IHostBuilder CreateWebHostBuilder(string[] args) =>
