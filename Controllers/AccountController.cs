@@ -14,17 +14,17 @@ namespace MVCMusicStore.Controllers
     [Authorize]
     public class AccountController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly ILogger<AccountController> _logger;
-        private readonly EmailSender _emailSender;
+        private readonly UserManager<ApplicationUser> userManager;
+        private readonly SignInManager<ApplicationUser> signInManager;
+        private readonly ILogger<AccountController> logger;
+        private readonly EmailSender emailSender;
 
         public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger, EmailSender emailSender)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _logger = logger;
-            _emailSender = emailSender;
+            this.userManager = userManager;
+            this.signInManager = signInManager;
+            this.logger = logger;
+            this.emailSender = emailSender;
         }
 
         // GET: /Account/Login
@@ -46,15 +46,15 @@ namespace MVCMusicStore.Controllers
         {
             if (!ModelState.IsValid) return View(loginViewModel);
 
-            var user = await _userManager.FindByNameAsync(loginViewModel.UserName);
+            var user = await userManager.FindByNameAsync(loginViewModel.UserName);
 
             if (user != null)
             {
-                var loginResult = await _signInManager.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
+                var loginResult = await signInManager.PasswordSignInAsync(user, loginViewModel.Password, loginViewModel.RememberMe, false);
 
                 if (loginResult.Succeeded && string.IsNullOrEmpty(loginViewModel.ReturnUrl))
                 {
-                    _logger.LogInformation("User logged in.");
+                    logger.LogInformation("User logged in.");
 
                     return RedirectToAction("Index", "Home");
                 }
@@ -73,9 +73,9 @@ namespace MVCMusicStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await signInManager.SignOutAsync();
 
-            _logger.LogInformation("User logged out.");
+            logger.LogInformation("User logged out.");
 
             return RedirectToAction("Index", "Home");
         }
@@ -99,26 +99,26 @@ namespace MVCMusicStore.Controllers
 
             var user = new ApplicationUser { UserName = registerViewModel.UserName, Email = registerViewModel.Email };
 
-            var identityResult = await _userManager.CreateAsync(user, registerViewModel.Password);
+            var identityResult = await userManager.CreateAsync(user, registerViewModel.Password);
 
             var emailConfirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
             if (identityResult.Succeeded)
             {
-                _logger.LogInformation("User created a new account with password");
+                logger.LogInformation("User created a new account with password");
 
                 var callBackUrl = Url.Page("/Account/ConfirmEmail", null, new { userId = user.Id, emailConfirmationToken }, Request.Scheme);
 
-                await _emailSender.SendEmailAsync(registerViewModel.Email, "Confirm your email", $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
+                await emailSender.SendEmailAsync(registerViewModel.Email, "Confirm your email", $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
 
-                await _signInManager.SignInAsync(user, false);
+                await signInManager.SignInAsync(user, false);
 
                 return RedirectToAction("Index", "Home");
             }
 
             foreach (var error in identityResult.Errors)
             {
-                _logger.LogError($"Failed to register: '{error.Description}'");
+                logger.LogError($"Failed to register: '{error.Description}'");
 
                 ModelState.AddModelError(string.Empty, error.Description);
             }
@@ -131,7 +131,7 @@ namespace MVCMusicStore.Controllers
         {
             if (userId == null || token == null) return RedirectToAction("Index", "Home");
 
-            var user = await _userManager.FindByIdAsync(userId);
+            var user = await userManager.FindByIdAsync(userId);
 
             if (user == null) return NotFound($"Unable to load user with ID '{userId}'");
 
@@ -161,7 +161,7 @@ namespace MVCMusicStore.Controllers
         {
             if (!ModelState.IsValid) return View(resetPasswordViewModel);
 
-            var user = await _userManager.FindByEmailAsync(resetPasswordViewModel.Email);
+            var user = await userManager.FindByEmailAsync(resetPasswordViewModel.Email);
 
             if (user == null) return RedirectToAction("ResetPasswordConfirmation", "Account");
 
@@ -179,9 +179,9 @@ namespace MVCMusicStore.Controllers
         {
             if (!ModelState.IsValid) return View(forgotPasswordViewModel);
 
-            var user = await _userManager.FindByEmailAsync(forgotPasswordViewModel.Email);
+            var user = await userManager.FindByEmailAsync(forgotPasswordViewModel.Email);
 
-            if (user == null || !await _userManager.IsEmailConfirmedAsync(user))
+            if (user == null || !await userManager.IsEmailConfirmedAsync(user))
             {
                 return RedirectToAction("ForgotPasswordConfirmation", "Account");
             }
@@ -190,7 +190,7 @@ namespace MVCMusicStore.Controllers
 
             var callBackUrl = Url.Page("/Account/ResetPassword", null, new { passwordResetToken }, Request.Scheme);
 
-            await _emailSender.SendEmailAsync(forgotPasswordViewModel.Email, "Reset Password", $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
+            await emailSender.SendEmailAsync(forgotPasswordViewModel.Email, "Reset Password", $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
 
             return RedirectToAction("ForgotPasswordConfirmation", "Account");
         }
