@@ -29,6 +29,11 @@ namespace MVCMusicStore
             services.AddEntityFrameworkNpgsql().AddDbContext<MusicStoreContext>(options =>
                 options.UseNpgsql(Configuration.GetConnectionString("MusicStore")));
 
+            //Adds support for controllers and API - related features, but not views or pages.
+            services.AddControllers();
+            services.AddControllersWithViews();
+            services.AddRazorPages();
+
             services.AddIdentity<ApplicationUser, IdentityRole>(config =>
             {
                 config.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultEmailProvider;
@@ -86,8 +91,11 @@ namespace MVCMusicStore
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
+            app.UseCors();
             app.UseCookiePolicy();
             app.UseAuthentication();
+            app.UseAuthorization();
+
 
             app.UseEndpoints(endPoints =>
             {
