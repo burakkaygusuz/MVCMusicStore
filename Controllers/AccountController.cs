@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using MVCMusicStore.Authentication;
 using MVCMusicStore.Utilities;
 using MVCMusicStore.ViewModels;
 using System;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
@@ -103,11 +105,13 @@ namespace MVCMusicStore.Controllers
 
             var emailConfirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
 
+            emailConfirmationToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(emailConfirmationToken));
+
             if (identityResult.Succeeded)
             {
                 logger.LogInformation("User created a new account with password");
 
-                var callBackUrl = Url.Page("/Account/ConfirmEmail", null, new { userId = user.Id, emailConfirmationToken }, Request.Scheme);
+                var callBackUrl = Url.Page("/Account/ConfirmEmail", null, new { userId = user.Id, code = emailConfirmationToken }, Request.Scheme);
 
                 await emailSender.SendEmailAsync(registerViewModel.Email, "Confirm your email", $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callBackUrl)}'>clicking here</a>.");
 
